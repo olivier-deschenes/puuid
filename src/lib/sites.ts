@@ -10,8 +10,10 @@ export interface Site {
 }
 
 /**
- * Every `*.puuid.com` hostname, as configured in Cloudflare
- * (Workers custom domains on the puuid.com zone).
+ * The `*.puuid.com` hostnames worth linking to, as configured in
+ * Cloudflare (Workers custom domains on the puuid.com zone).
+ *
+ * yard.puuid.com is deliberately left out.
  */
 export const sites: Array<Site> = [
   {
@@ -72,13 +74,6 @@ export const sites: Array<Site> = [
     description:
       'Build layered timelines in the browser and export PNG, SVG or JSON.',
     alias: 'tlmkr.com',
-  },
-  {
-    prefix: 'yard',
-    name: 'Yardv2',
-    // TODO: the app renders nothing without signing in — write the real line.
-    description: 'A work in progress.',
-    alias: 'yardv2.com',
   },
 ]
 
