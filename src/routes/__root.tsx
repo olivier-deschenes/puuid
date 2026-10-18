@@ -37,7 +37,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'odeschenes.dev — everything I build',
+      },
+      {
+        name: 'description',
+        content:
+          'An index of the sites running on odeschenes.dev: gas prices, budgets, timelines, room plans and more.',
+      },
+      {
+        name: 'color-scheme',
+        content: 'light dark',
       },
     ],
     links: [
