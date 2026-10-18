@@ -5,41 +5,53 @@ import { ROOT_DOMAIN, siteUrl, sites } from '#/lib/sites'
 import { cn } from '#/lib/utils'
 
 const ROTATE_MS = 4200
-const FIRST = Math.max(
+/** How many neighbours to keep mounted on each side of the active row. */
+const WINDOW = 3
+const START = Math.max(
   sites.findIndex((site) => site.prefix === 'gas'),
   0,
 )
+/** Widest prefix — it sizes the reel so the dot never shifts. */
+const LONGEST = sites.reduce(
+  (longest, site) =>
+    site.prefix.length > longest.length ? site.prefix : longest,
+  '',
+)
+
+const siteAt = (position: number) =>
+  sites[((position % sites.length) + sites.length) % sites.length]
 
 export function DomainCarousel() {
-  const [index, setIndex] = useState(FIRST)
-  const [previous, setPrevious] = useState(FIRST)
-  const [direction, setDirection] = useState<1 | -1>(1)
+  // A monotonic position rather than an index, so the reel can spin past the
+  // ends of the list in either direction without snapping back.
+  const [position, setPosition] = useState(START)
   const [rotating, setRotating] = useState(true)
   const [hovering, setHovering] = useState(false)
 
-  const indexRef = useRef(index)
-  indexRef.current = index
-
-  const goTo = useCallback((next: number, dir?: 1 | -1) => {
-    const current = indexRef.current
-    const target = (next + sites.length) % sites.length
-    if (target === current) return
-    setDirection(dir ?? (target > current ? 1 : -1))
-    setPrevious(current)
-    setIndex(target)
-  }, [])
+  const positionRef = useRef(position)
+  positionRef.current = position
 
   const step = useCallback(
-    (delta: 1 | -1) => goTo(indexRef.current + delta, delta),
-    [goTo],
+    (delta: 1 | -1) => setPosition((current) => current + delta),
+    [],
   )
+
+  /** Spin the shortest way round to a given entry in the list. */
+  const goTo = useCallback((slot: number) => {
+    const current = positionRef.current
+    const currentSlot = ((current % sites.length) + sites.length) % sites.length
+    let delta = slot - currentSlot
+    if (delta > sites.length / 2) delta -= sites.length
+    if (delta < -sites.length / 2) delta += sites.length
+    setPosition(current + delta)
+  }, [])
 
   // Auto-rotate until the visitor takes over, and hold while hovered.
   useEffect(() => {
     if (!rotating || hovering) return
     const timer = window.setInterval(() => step(1), ROTATE_MS)
     return () => window.clearInterval(timer)
-  }, [rotating, hovering, step, index])
+  }, [rotating, hovering, step])
 
   // Up/down anywhere on the page moves the carousel.
   useEffect(() => {
@@ -53,18 +65,12 @@ export function DomainCarousel() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [step])
 
-  const active = sites[index]
+  const active = siteAt(position)
+  const activeSlot = ((position % sites.length) + sites.length) % sites.length
 
-  /** Where a slot sits in the vertical reel: in view, on its way out, or queued. */
-  const slotOffset = (slot: number) => {
-    if (slot === index) return 'translate-y-0 opacity-100'
-    const leaving = slot === previous
-    const up = direction === 1 ? leaving : !leaving
-    return cn(
-      up ? '-translate-y-full' : 'translate-y-full',
-      'opacity-0',
-      !leaving && 'duration-0',
-    )
+  const rows = []
+  for (let offset = -WINDOW; offset <= WINDOW; offset += 1) {
+    rows.push(position + offset)
   }
 
   return (
@@ -72,68 +78,73 @@ export function DomainCarousel() {
       className="flex w-full flex-col items-start gap-8"
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
+      style={{ ['--row' as string]: '1.24em' }}
     >
-      <div className="w-full">
-        <a
-          href={siteUrl(active)}
-          aria-label={`${active.prefix}.${ROOT_DOMAIN} — ${active.name}. ${active.description}`}
-          className="group/link block focus-visible:outline-none"
-          onFocus={() => setHovering(true)}
-          onBlur={() => setHovering(false)}
+      <a
+        href={siteUrl(active)}
+        aria-label={`${active.prefix}.${ROOT_DOMAIN} — ${active.name}. ${active.description}`}
+        className="group/link block w-full focus-visible:outline-none"
+        onFocus={() => setHovering(true)}
+        onBlur={() => setHovering(false)}
+      >
+        <h1
+          className={cn(
+            'font-mono leading-[1.05] font-medium tracking-tight',
+            // Stacked on phones; one unbroken hostname from `sm` up, sized so
+            // the longest prefix still fits on the line.
+            'flex flex-col items-start',
+            'sm:flex-row sm:flex-nowrap sm:items-center',
+            'text-[clamp(2rem,11.5vw,3rem)] sm:text-[clamp(1.75rem,7.6vw,4.75rem)]',
+          )}
         >
-          <h1
+          {/* The reel: three rows tall, the neighbours showing through faintly
+              above and below the one in play, fading out at the edges. */}
+          <span
             className={cn(
-              'font-mono leading-[1.05] font-medium tracking-tight',
-              // Stacked on phones; one unbroken hostname from `sm` up, sized so
-              // the longest prefix still fits on the line.
-              'flex flex-col items-start',
-              'sm:flex-row sm:flex-nowrap sm:items-baseline',
-              'text-[clamp(2rem,11.5vw,3rem)] sm:text-[clamp(1.75rem,7.6vw,4.75rem)]',
+              'relative block h-[calc(var(--row)*3)] overflow-hidden',
+              '[mask-image:linear-gradient(to_bottom,transparent,black_28%,black_72%,transparent)]',
             )}
           >
-            {/* The reel: every prefix stacked in one grid cell, so the cell is
-                as wide as the longest one and the dot never moves. */}
-            <span className="grid overflow-hidden py-[0.12em]">
-              {sites.map((site, slot) => (
+            {/* Invisible, but it gives the reel the width of the longest prefix. */}
+            <span aria-hidden className="invisible block">
+              {LONGEST}
+            </span>
+            <span
+              className="absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+              style={{
+                transform: `translateY(calc(var(--row) * ${1 - position}))`,
+              }}
+            >
+              {rows.map((row) => (
                 <span
-                  key={site.prefix}
-                  aria-hidden={slot !== index}
+                  key={row}
+                  aria-hidden={row !== position}
                   className={cn(
-                    'col-start-1 row-start-1 justify-self-start sm:justify-self-end',
-                    'text-foreground transition-[translate,opacity] duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
-                    slotOffset(slot),
+                    'absolute inset-x-0 h-[var(--row)] text-left leading-[var(--row)] sm:text-right',
+                    'transition-opacity duration-500 motion-reduce:transition-none',
+                    row === position
+                      ? 'text-foreground opacity-100'
+                      : 'text-foreground opacity-20',
                   )}
+                  style={{ top: `calc(var(--row) * ${row})` }}
                 >
-                  {site.prefix}
+                  {siteAt(row).prefix}
                 </span>
               ))}
             </span>
-            <span className="inline-flex items-center py-[0.12em]">
-              <span className="text-muted-foreground whitespace-nowrap">
-                .{ROOT_DOMAIN}
-              </span>
-              <IconArrowUpRight
-                aria-hidden
-                className="text-muted-foreground group-hover/link:text-foreground group-focus-visible/link:text-foreground ml-2 size-[0.4em] shrink-0 transition-[transform,color] duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 motion-reduce:transition-none"
-                stroke={1.75}
-              />
+          </span>
+          <span className="inline-flex h-[var(--row)] items-center sm:h-[calc(var(--row)*3)]">
+            <span className="text-muted-foreground whitespace-nowrap">
+              .{ROOT_DOMAIN}
             </span>
-          </h1>
-        </a>
-
-        {/* Rotation progress — restarts with each prefix. */}
-        <div className="bg-border mt-4 h-px w-full max-w-md overflow-hidden">
-          <div
-            key={`${index}-${rotating}`}
-            className={cn(
-              'bg-foreground/50 h-px origin-left',
-              rotating ? 'animate-[reel-progress_4200ms_linear]' : 'opacity-0',
-              hovering && '[animation-play-state:paused]',
-            )}
-            style={{ animationFillMode: 'forwards' }}
-          />
-        </div>
-      </div>
+            <IconArrowUpRight
+              aria-hidden
+              className="text-muted-foreground group-hover/link:text-foreground group-focus-visible/link:text-foreground ml-2 size-[0.4em] shrink-0 transition-[transform,color] duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 motion-reduce:transition-none"
+              stroke={1.75}
+            />
+          </span>
+        </h1>
+      </a>
 
       <div className="min-h-[5.5rem] max-w-xl" aria-live="polite">
         <div className="flex items-baseline gap-3">
@@ -155,7 +166,7 @@ export function DomainCarousel() {
       <nav aria-label="All sites" className="w-full">
         <ul className="flex flex-wrap gap-x-1 gap-y-1">
           {sites.map((site, slot) => {
-            const current = slot === index
+            const current = slot === activeSlot
             return (
               <li key={site.prefix}>
                 <button
@@ -167,7 +178,7 @@ export function DomainCarousel() {
                   }}
                   className={cn(
                     'rounded-full border px-3 py-1.5 font-mono text-xs transition-colors',
-                    'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
+                    'focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                     current
                       ? 'border-foreground text-foreground'
                       : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground',
