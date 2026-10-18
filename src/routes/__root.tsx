@@ -37,12 +37,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'odeschenes.dev — everything I build',
+        title: 'puuid.com — everything I build',
       },
       {
         name: 'description',
         content:
-          'An index of the sites running on odeschenes.dev: gas prices, budgets, timelines, room plans and more.',
+          'An index of the sites running on puuid.com: gas prices, budgets, timelines, room plans, barcodes and more.',
       },
       {
         name: 'color-scheme',

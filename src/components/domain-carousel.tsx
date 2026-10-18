@@ -88,7 +88,7 @@ export function DomainCarousel() {
               // the longest prefix still fits on the line.
               'flex flex-col items-start',
               'sm:flex-row sm:flex-nowrap sm:items-baseline',
-              'text-[clamp(1.6rem,8.4vw,2.5rem)] sm:text-[clamp(1.5rem,5.9vw,3.6rem)]',
+              'text-[clamp(2rem,11.5vw,3rem)] sm:text-[clamp(1.75rem,7.6vw,4.75rem)]',
             )}
           >
             {/* The reel: every prefix stacked in one grid cell, so the cell is

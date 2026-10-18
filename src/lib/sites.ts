@@ -1,5 +1,5 @@
 export interface Site {
-  /** Subdomain label in front of `.odeschenes.dev`. */
+  /** Subdomain label in front of `.puuid.com`. */
   prefix: string
   /** Product name as the site presents itself. */
   name: string
@@ -10,10 +10,16 @@ export interface Site {
 }
 
 /**
- * Every `*.odeschenes.dev` hostname, as configured in Cloudflare
- * (Workers custom domains on the odeschenes.dev zone).
+ * Every `*.puuid.com` hostname, as configured in Cloudflare
+ * (Workers custom domains on the puuid.com zone).
  */
 export const sites: Array<Site> = [
+  {
+    prefix: 'barcodes',
+    name: 'barcodes.page',
+    description: 'Generate Code 128 barcodes. That is the whole site.',
+    alias: 'barcodes.page',
+  },
   {
     prefix: 'budget',
     name: 'Budget',
@@ -67,8 +73,15 @@ export const sites: Array<Site> = [
       'Build layered timelines in the browser and export PNG, SVG or JSON.',
     alias: 'tlmkr.com',
   },
+  {
+    prefix: 'yard',
+    name: 'Yardv2',
+    // TODO: the app renders nothing without signing in — write the real line.
+    description: 'A work in progress.',
+    alias: 'yardv2.com',
+  },
 ]
 
-export const ROOT_DOMAIN = 'odeschenes.dev'
+export const ROOT_DOMAIN = 'puuid.com'
 
 export const siteUrl = (site: Site) => `https://${site.prefix}.${ROOT_DOMAIN}`
