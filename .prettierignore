@@ -1,0 +1,7 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+# Generated / cache (not covered by prettier's root .gitignore handling)
+project.inlang/cache/
+project.inlang/.lix/
+src/routeTree.gen.ts
