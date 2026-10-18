@@ -1,5 +1,5 @@
 {
-  "name": "statement-analyser",
+  "name": "puuid",
   "private": true,
   "type": "module",
   "imports": {
