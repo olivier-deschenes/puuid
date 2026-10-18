@@ -191,3 +191,12 @@ body,
     );
   }
 }
+
+@keyframes reel-warm {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 0.6;
+  }
+}

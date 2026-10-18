@@ -120,11 +120,16 @@ export function DomainCarousel() {
                   key={row}
                   aria-hidden={row !== position}
                   className={cn(
-                    'absolute inset-x-0 h-[var(--row)] text-left leading-[var(--row)] sm:text-right',
+                    'text-foreground absolute inset-x-0 h-[var(--row)] text-left leading-[var(--row)] sm:text-right',
                     'transition-opacity duration-500 motion-reduce:transition-none',
-                    row === position
-                      ? 'text-foreground opacity-100'
-                      : 'text-foreground opacity-20',
+                    row === position ? 'opacity-100' : 'opacity-15',
+                    // The one up next warms up over the interval, so the wait
+                    // for the spin is visible without a progress bar.
+                    row === position + 1 &&
+                      rotating && [
+                        'animate-[reel-warm_4200ms_linear] motion-reduce:animate-none',
+                        hovering && '[animation-play-state:paused]',
+                      ],
                   )}
                   style={{ top: `calc(var(--row) * ${row})` }}
                 >
